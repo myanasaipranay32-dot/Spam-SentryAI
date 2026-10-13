@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Spam Detection AI</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+</head>
+
+
+<body class="bg-black text-white min-h-screen">
+
+<!-- NAVBAR -->
+
+<nav class="bg-zinc-900 border-b border-zinc-800 px-6 md:px-10 py-4 flex justify-between items-center">
+
+<div class="flex items-center gap-2 font-semibold text-lg">
+<span class="material-icons-round text-indigo-400">security</span>
+Spam Detection AI
+</div>
+
+<div class="space-x-6 text-sm hidden md:block">
+<a href="/" class="hover:text-indigo-400">Home</a>
+<a href="/analysis" class="text-indigo-400">Analyze</a>
+<a href="/about" class="hover:text-indigo-400">About</a>
+</div>
+
+</nav>
+
+
+<!-- PAGE -->
+
+<div class="max-w-7xl mx-auto p-6 md:p-10">
+
+<h1 class="text-3xl md:text-4xl font-bold mb-2">
+AI Spam Analyzer
+</h1>
+
+<p class="text-gray-400 mb-10">
+Paste an SMS and our machine learning model will detect spam instantly.
+</p>
+
+
+<!-- MAIN GRID -->
+
+<div class="grid md:grid-cols-2 gap-8">
+
+
+<!-- INPUT PANEL -->
+
+<div class="bg-zinc-900 rounded-xl p-8 border border-zinc-800">
+
+<h2 class="text-lg font-semibold mb-4">Message Input</h2>
+
+<textarea
+id="message"
+class="w-full h-40 bg-black border border-zinc-700 rounded-lg p-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+placeholder="Paste SMS message..."
+></textarea>
+
+<div class="flex gap-3 mt-4">
+
+<button onclick="setSpam()" class="bg-zinc-800 px-4 py-2 rounded hover:bg-zinc-700 text-sm">
+Spam Example
+</button>
+
+<button onclick="setHam()" class="bg-zinc-800 px-4 py-2 rounded hover:bg-zinc-700 text-sm">
+Ham Example
+</button>
+
+</div>
+
+<button
+id="analyze-btn"
+class="mt-6 w-full bg-indigo-600 hover:bg-indigo-700 py-3 rounded-lg font-semibold transition">
+
+Analyze Message
+
+</button>
+
+</div>
+
+
+
+<!-- RESULT PANEL -->
+
+<div class="bg-zinc-900 rounded-xl p-8 border border-zinc-800">
+
+<h2 class="text-lg font-semibold mb-6">Prediction Result</h2>
+
+
+<div class="text-center mb-6">
+
+<h3 id="result-title" class="text-3xl font-bold text-gray-300">
+Ready
+</h3>
+
+<p id="result-text" class="text-gray-400 mt-2">
+Submit a message for analysis
+</p>
+
+<!-- AI Loader -->
+<div id="loader" class="hidden flex justify-center mt-4">
+<div class="animate-spin rounded-full h-8 w-8 border-t-2 border-indigo-500"></div>
+</div>
+
+</div>
+
+
+<!-- CONFIDENCE BAR -->
+
+<div class="mb-8">
+
+<div class="flex justify-between text-sm mb-2">
+<span>Confidence</span>
+<span id="confidence-value">0%</span>
+</div>
+
+<div class="w-full bg-zinc-800 h-3 rounded">
+
+<div
+id="confidence-bar"
+class="bg-indigo-500 h-3 rounded transition-all duration-500"
+style="width:0%">
+</div>
+
+</div>
+
+</div>
+
+
+<!-- CHART -->
+
+<canvas id="chart"></canvas>
+
+</div>
+
+</div>
+
+
+<!-- HISTORY -->
+
+<div class="mt-10 bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+
+<div class="flex justify-between mb-4">
+<h2 class="font-semibold">Recent Analysis</h2>
+<button onclick="clearHistory()" class="text-sm text-gray-400 hover:text-white">
+Clear
+</button>
+</div>
+
+<ul id="history"></ul>
+
+</div>
+
+</div>
+
+
+<script>
+
+const analyzeBtn=document.getElementById("analyze-btn")
+const messageInput=document.getElementById("message")
+
+const resultTitle=document.getElementById("result-title")
+const resultText=document.getElementById("result-text")
+
+const history=document.getElementById("history")
+
+const confidenceBar=document.getElementById("confidence-bar")
+const confidenceValue=document.getElementById("confidence-value")
+
+const loader=document.getElementById("loader")
+
+
+// spam keywords
+
+const spamWords=["win","winner","free","prize","cash","claim","offer","click","urgent"]
+
+
+// highlight spam words
+
+function highlightSpam(text){
+
+let output=text
+
+spamWords.forEach(word=>{
+
+const regex=new RegExp(`\\b${word}\\b`,"gi")
+
+output=output.replace(
+regex,
+`<span class="text-red-400 font-bold">${word}</span>`
+)
+
+})
+
+return output
+
+}
+
+
+// typing detection
+
+messageInput.addEventListener("input",()=>{
+
+resultTitle.textContent="Typing detected..."
+resultText.textContent="AI preparing analysis..."
+
+})
+
+
+// typing animation
+
+function typingAnimation(text,element){
+
+element.innerHTML=""
+let i=0
+
+const interval=setInterval(()=>{
+
+element.innerHTML+=text[i]
+i++
+
+if(i>=text.length) clearInterval(interval)
+
+},30)
+
+}
+
+
+// chart
+
+const ctx=document.getElementById("chart")
+
+let chart=new Chart(ctx,{
+type:"pie",
+data:{
+labels:["Spam","Ham"],
+datasets:[{
+data:[0,100],
+backgroundColor:["#ef4444","#22c55e"]
+}]
+},
+options:{
+animation:{duration:1200}
+}
+})
+
+
+// example buttons
+
+function setSpam(){
+messageInput.value="Congratulations! You've won ₹50,000 cash prize. Click here to claim now."
+}
+
+function setHam(){
+messageInput.value="Hey mom I'll be late for dinner tonight."
+}
+
+
+// clear history
+
+function clearHistory(){
+history.innerHTML=""
+}
+
+
+// analyze
+
+analyzeBtn.onclick=async()=>{
+
+const msg=messageInput.value.trim()
+
+if(!msg) return alert("Enter a message")
+
+typingAnimation("Analyzing message with AI...",resultTitle)
+
+loader.classList.remove("hidden")
+
+messageInput.classList.add("ring-2","ring-indigo-500")
+
+try{
+
+const res=await fetch("/predict",{
+
+method:"POST",
+
+headers:{"Content-Type":"application/json"},
+
+body:JSON.stringify({message:msg})
+
+})
+
+const data=await res.json()
+
+loader.classList.add("hidden")
+
+messageInput.classList.remove("ring-2","ring-indigo-500")
+
+
+resultTitle.textContent=data.prediction
+
+resultTitle.className="text-3xl font-bold "+(
+data.prediction==="Spam"?"text-red-400":"text-green-400"
+)
+
+resultTitle.classList.add("animate-pulse")
+
+setTimeout(()=>{
+resultTitle.classList.remove("animate-pulse")
+},1500)
+
+
+// highlight spam words
+
+resultText.innerHTML=highlightSpam(msg)
+
+
+// confidence
+
+confidenceValue.textContent=data.confidence+"%"
+
+confidenceBar.style.width=data.confidence+"%"
+
+
+// update chart
+
+if(data.prediction==="Spam"){
+
+chart.data.datasets[0].data=[data.confidence,100-data.confidence]
+
+}
+
+else{
+
+chart.data.datasets[0].data=[100-data.confidence,data.confidence]
+
+}
+
+chart.update()
+
+
+// history
+
+history.innerHTML+=`
+
+<li class="border-b border-zinc-800 py-3 text-sm">
+
+<span class="${
+data.prediction==="Spam"?"text-red-400":"text-green-400"
+} font-bold">
+
+${data.prediction}
+
+</span>
+
+<p class="text-gray-400">
+${msg.slice(0,80)}...
+</p>
+
+</li>
+
+`
+
+}
+
+catch{
+
+loader.classList.add("hidden")
+resultTitle.textContent="Server Error"
+
+}
+
+}
+
+</script>
+
+</body>
+</html>
