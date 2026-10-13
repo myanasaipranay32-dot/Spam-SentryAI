@@ -76,6 +76,6 @@ def predict():
 
 
 # --- Main Execution ---
-if __name__ == '__main__':
-    # The host '0.0.0.0' makes the server accessible on your local network.
-    app.run(host='0.0.0.0', port=5000, debug=True)
+
+if __name__ == "__main__":
+    app.run(debug=False)
